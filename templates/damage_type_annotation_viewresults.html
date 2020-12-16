@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOD Annotation Results</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type = "text/javascript">
+      function preventBack(){window.history.forward();}
+      setTimeout("preventBack()", 0);
+      window.onunload=function(){
+        null
+      };
+    </script>
+
+    <style>
+    body {
+      /* Set "my-sec-counter" to 0 */
+      counter-reset: annotate-site-counter;
+    }
+
+    label.counter::before {
+      /* Increment "my-sec-counter" by 1 */
+      counter-increment: annotate-site-counter;
+      content: "Site " counter(annotate-site-counter);
+    }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#" style="text-transform:capitalize;">Hi {{ current_user.id }}</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarText">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation.main', page=index) }}">TOD Annotation</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation_viewresults.main') }}">Results</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="http://mliu3.pages.gitlab.aws.cccis.com/damage_type_annotation/" target="_blank">Guidelines</a>
+      </li>
+    </ul>
+    <span class="navbar-text">
+      <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="color:white">Log Out</a>
+    </span>
+  </div>
+</nav>
+
+<a class="nav-link" href="{{ url_for('damage_type_annotation.main', page=index) }}"><< Back to Annotation</a>
+<div style="margin:30px;">
+  {% for ann_res in annotation_results %}
+  <div class="row">
+    <hr class="col-md-12" style="margin-bottom: 10px" />
+    <div class="col-md-4">
+      <a href="{{ url_for('damage_type_annotation.main', page=ann_res.page) }}" target="_blank"><h6> {{ ann_res.image_name}} </h6></a>
+      <img class="modal-content" src="data:image/png;base64,{{ ann_res.original_image }}" style="margin-bottom: 30px">
+    </div>
+    <div class="col-md-8" style="overflow-y:auto;max-height:700px;"><div class="row">
+      {% for ann in ann_res.annotations %}
+        <div class="col-md-3">
+          <h6 style="text-align: center">{{ ann.type }}</h6>
+          <img class="modal-content" src="data:image/png;base64,{{ ann.image_mask }}" style="margin-bottom: 30px" onclick="inlinezoom(this)">
+        </div>
+      {% endfor %}
+    </div></div>
+  </div>
+  {% endfor %}
+</div>
+
+
+<script type="text/javascript">
+function inlinezoom(element) {
+  if ( element.parentNode.className == "col-md-6" ) {
+    element.parentNode.className = "col-md-3";
+  } else {
+    element.parentNode.className = "col-md-6";
+  } 
+}
+</script>
+
+</body>
+</html>

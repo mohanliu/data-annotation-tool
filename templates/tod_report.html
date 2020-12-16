@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>R&D TOD Survey</title>
+    <script type="JavaScript">
+    function preventBack(){window.history.forward();}
+    setTimeout("preventBack()", 0);
+    window.onunload=function(){null};
+    </script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="{{ url_for('static', filename='reportplot.css') }}" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#" style="text-transform:capitalize;">Hi {{ current_user.id }}</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarText">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('tod_survey.main') }}">Survey</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('tod_report.main') }}">Report</a>
+      </li>
+    </ul>
+    <span class="navbar-text">
+      <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="color:white">Log Out</a>
+    </span>
+  </div>
+</nav>
+<div class="row justify-content-center">
+    <div class="col-md-3"  style="margin-top: 50px">
+    <h5> In total, there are {{ stats.num_case_surveyed }} images have been surveyed.</h5>
+    <ul>
+      <li>There are {{ stats.num_valid }} ({{ stats.perc_valid }}) valid images, and {{ stats.not_relevant }} images are not relevant.</li>
+      <li>Number of images that have damages: </li>
+        <ul>
+          <li>Yes ({{ stats.damage_yes }}), Maybe ({{ stats.damage_maybe }}), No ({{ stats.damage_no }})</li>
+        </ul>
+      <li>Number of images that have damages outside the bounding box:</li>
+        <ul>
+          <li>Yes ({{ stats.dmg_outside_bbox_yes }}), Maybe ({{ stats.dmg_outside_bbox_maybe }}), No ({{ stats.dmg_outside_bbox_no }})</li>
+        </ul>
+    </ul>
+  </div>
+  <div class="col-md-6" style="margin-top: 50px">
+    <table class="table">
+      <thead class="thead-dark">
+        <tr>
+          <th scope="col"></th>
+          <th scope="col">Strongly Agree</th>
+          <th scope="col">Agree</th>
+          <th scope="col">Neutral</th>
+          <th scope="col">Disagree</th>
+          <th scope="col">Strongly Disagree</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Count</th>
+          <td>{{ stats.strong_agree }}</td>
+          <td>{{ stats.agree }}</td>
+          <td>{{ stats.neutral }}</td>
+          <td>{{ stats.disagree }}</td>
+          <td>{{ stats.strong_disagree }}</td>
+        </tr>
+        <tr>
+          <th scope="row">Percentage</th>
+          <td>{{ stats.strong_agree_perc }}</td>
+          <td>{{ stats.agree_perc }}</td>
+          <td>{{ stats.neutral_perc }}</td>
+          <td>{{ stats.disagree_perc }}</td>
+          <td>{{ stats.strong_disagree_perc }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<div class="row justify-content-around">
+  <div class="col-md-4">
+    <dl>
+      <dt>
+        Damage Types Not Labeled
+      </dt>
+      <dd class="percentage percentage-{{ stats.dent_mis }}"><span class="text">Dent</span></dd>
+      <dd class="percentage percentage-{{ stats.scratch_mis }}"><span class="text">Scratch</span></dd>
+      <dd class="percentage percentage-{{ stats.tear_mis }}"><span class="text">Tear</span></dd>
+      <dd class="percentage percentage-{{ stats.crack_mis }}"><span class="text">Crack</span></dd>
+      <dd class="percentage percentage-{{ stats.misalignment_mis }}"><span class="text">Misalignment</span></dd>
+    </dl>
+  </div>
+  <div class="col-md-4">
+    <dl>
+      <dt>
+        Damage Types Falsely Labeled
+      </dt>
+      <dd class="percentage percentage-{{ stats.dent_fals }}"><span class="text">Dent</span></dd>
+      <dd class="percentage percentage-{{ stats.scratch_fals }}"><span class="text">Scratch</span></dd>
+      <dd class="percentage percentage-{{ stats.tear_fals }}"><span class="text">Tear</span></dd>
+      <dd class="percentage percentage-{{ stats.crack_fals }}"><span class="text">Crack</span></dd>
+      <dd class="percentage percentage-{{ stats.misalignment_fals }}"><span class="text">Misalignment</span></dd>
+    </dl>
+  </div>
+</div>
+</body>
+</html>

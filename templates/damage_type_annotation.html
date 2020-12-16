@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOD Annotation</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <script src="{{ url_for('static', filename='tod_annotation_tool.js') }}"></script>
+
+    <script type = "text/javascript">
+      function preventBack(){window.history.forward();}
+      setTimeout("preventBack()", 0);
+      window.onunload=function(){
+        null
+      };
+    </script>
+
+    <style>
+    body {
+      /* Set "my-sec-counter" to 0 */
+      counter-reset: annotate-site-counter;
+    }
+
+    label.counter::before {
+      /* Increment "my-sec-counter" by 1 */
+      counter-increment: annotate-site-counter;
+      content: "Site " counter(annotate-site-counter);
+    }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#" style="text-transform:capitalize;">Hi {{ current_user.id }}</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarText">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation.main', page=index) }}">TOD Annotation</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation_viewresults.main') }}" target="_blank">Results</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="http://mliu3.pages.gitlab.aws.cccis.com/damage_type_annotation/" target="_blank">Guidelines</a>
+      </li>
+    </ul>
+    <span class="navbar-text">
+      <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="color:white">Log Out</a>
+    </span>
+  </div>
+</nav>
+
+<div class="row" style="margin-left: 5%;margin-right: 5%;margin-bottom: 30px">
+    <div class="col-md-12">
+        <div class="progress" style="margin-top:1em">
+          <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+    </div>
+    <div class="col-md-6" >
+        <b>Image ID</b>: {{ image_name }}
+    </div>
+    <div class="col-md-6" style="text-align: right">
+        <b>Progress</b>: {{ index + 1 }}  / {{ total_images_present }}
+    </div>
+</div>
+
+<div style="display: flex;justify-content: center;">
+  <div id="canvas_container" style="width: {{ width }}px;margin-left: 1%">
+    <canvas id="tools_sketch" width="{{ width }}" height="{{ height }}" onclick="activate_button()" style="background: url('/temp_images/{{ image_basepath }}') no-repeat center center;">
+    Sorry, your browser doesn't support the &lt;canvas&gt; element.
+    </canvas>
+  </div>
+  <div style="flex-grow: 1; margin-left: 20px;margin-right: 1%;max-width: 600px;">
+    <form id="todform" action="{{ url_for('damage_type_annotation.process') }}" method="post" onsubmit=" return true;">
+    <div id="buttons" class="tools">
+        <!-- Control panel -->
+        <div style="background:darkslategrey; padding: 20px 5px 20px 5px; margin-bottom: 10px;width: 100%">
+          <div>
+            <h3 style="text-align: center;color: white"> Control Panel </h3>
+          </div>
+
+          <div class="row" style="margin-left: 1%;margin-right: 1%">
+
+            <div class="col-md-6" style="margin-bottom: 10px">
+              <button type="button" id="erasertool" class="btn btn-secondary" style="width:100%;border-radius: 15px;padding: 6px 0px;">Switch to Eraser Mode</button>
+            </div>
+            <div class="col-md-6" >
+              <div class="btn-group-toggle" data-toggle="buttons">
+                <button type="button" id="fillregion" class="btn btn-outline-danger" style="width:100%;border-radius: 15px;padding: 6px 0px;">Fill (off)</button>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <button type="button" id="clearbutton" class="btn btn-light" style="width: 100%;border-radius: 15px;padding: 6px 0px;">Clear</button> 
+            </div>
+            <div class="col-md-6">
+              <button type="button" id="undo_btn" disabled="true"  class="btn btn-light" style="width:100%;border-radius: 15px;padding: 6px 0px;">Undo</button>
+            </div>
+            <div class="col-md-12" style="margin-top: 20px">
+              <span style="color: white">Stroke Size: </span><span id="pencil_size_label" style="color: white"></span>
+              <input type="range" min="1" max="30" value="3" class="custom-range" id="pencil_size_bar">
+            </div>
+            <div class="col-md-12" style="margin-top: 10px">
+              <span style="color: white">Opacity: </span><span id="opacity_label" style="color: white"></span>
+              <input type="range" min="50" max="255" value="153" class="custom-range" id="opacity_label_bar">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Heatmap masks -->
+        <div style="border: 2px solid slategray;padding: 10px;border-radius: 15px;"> 
+        <h5 style="text-align: center;color:darkslategrey"> Predicted Damage Sites</h5>
+        <p style="text-align: center;font-size: 14px;font-style: italic;"> The followings are predicted damage sites by Damage Detection model.</p>
+        {% for mask_info in mask_image_bytes_data %}
+          <a role="button" name="showmask" id="togglemask_{{ mask_info.site_id }}" class="maskswitch btn btn-light" maskid="maskimage_{{ mask_info.site_id }}" style="margin-bottom: 4px;padding: 6px 20px;color:darkslategrey;border-radius: 10px">DMG {{ mask_info.site_id }}</a>
+          <img id="maskimage_{{ mask_info.site_id }}" src="data:image/png;base64,{{ mask_info.mask_bytes }}" style="display: none">
+        {% endfor %}
+        </div>
+
+        <hr class="col-md-12" style="margin-bottom: 10px" />
+
+        <!-- Add Annotations -->
+        <div class="row" style="margin-bottom: 10px">
+          <div class="col-md-12">
+            <button type="button" value="{{ previous_counter }}" id="addannotation" class="btn btn-outline-secondary" style="width: 100%;font-size: 18px;">Add</button> 
+          </div>
+          
+        </div>
+        <!-- <hr class="col-md-12" style="margin-bottom: 10px" /> -->
+
+        <!-- TOD labels -->
+        <div id="todlabelpanel" style="overflow-y:auto;max-height: 310px;">
+          {% if previous_data|length == 0 %}
+            <div class="input-group mb-3">
+              <button type="button" class="btn btn-outline-warning active" id="annotation_trigger_0" value="0" style="margin-right: 30px;width:80px;border-radius: 10px" onclick="trigger_annotation(this)">Site 0</button>
+              <div class="input-group-prepend">
+                <label class="input-group-text">Damage Type</label>
+              </div>
+              <select class="custom-select" name="dmg_type_site_0">
+                {% for t in damage_type_options %}
+                  <option value="{{ t }}" selected="" id="dmg_type_site_0_{{t}}">{{ t }}</option>
+                {% endfor %}
+              </select>
+              <button type="button" id="delete_site_0" class="btn btn-danger" onclick="deletelabel(this)" style="margin-left: 30px;color:white;border-radius: 10px">Delete</button>
+              <img id="annotation_site_0_img" src="" style="display: none"> 
+              <input type="hidden" name="annotation_site_0" id="annotation_site_0">
+            </div>
+          {% else %}
+          {% for pd in previous_data %}
+            <div class="input-group mb-3">
+              <button type="button" class="btn btn-outline-warning" id="annotation_trigger_{{pd.id}}" value="{{pd.id}}" style="margin-right: 30px;width:80px;border-radius: 10px" onclick="trigger_annotation(this)">Site {{pd.id}}</button>
+              <div class="input-group-prepend">
+                <label class="input-group-text">Damage Type</label>
+              </div>
+              <select class="custom-select" name="dmg_type_site_{{pd.id}}">
+                {% for t in damage_type_options %}
+                  {% if t == pd.type %}
+                    <option value="{{ t }}" selected=true id="dmg_type_site_{{pd.id}}_{{t}}">{{ t }}</option>
+                  {% else %}
+                    <option value="{{ t }}" id="dmg_type_site_{{pd.id}}_{{t}}">{{ t }}</option>
+                  {% endif %}
+                {% endfor %}
+              </select>
+              <button type="button" id="delete_site_{{pd.id}}" class="btn btn-danger" disabled="true" onclick="deletelabel(this)" style="margin-left: 30px;color:white;border-radius: 10px">Delete</button>
+              <img id="annotation_site_{{pd.id}}_img" src="data:image/png;base64,{{ pd.image_mask }}" style="display: none"> 
+              <input type="hidden" name="annotation_site_{{pd.id}}" id="annotation_site_{{pd.id}}">
+            </div>       
+          {% endfor %}
+          {% endif %}
+        </div>
+
+
+        <hr class="col-md-12" style="margin-bottom: 10px; margin-top: 0px" />
+
+        <!-- Pagination -->
+        <div class="row">
+          <div class="col-md-4">
+            {% if index == 0 %}
+                <button name="submit_done" disabled="true" value="back" class="btn btn-light" style="width: 100%;font-size: 18px;border-radius: 40px;">Back</button> 
+            {% else %}
+                <button name="submit_done" value="back" class="btn btn-light" style="width: 100%;font-size: 18px;border-radius: 40px;">Back</button> 
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <button id="submit_button" name="submit_done" value="next" class="btn btn-primary" style="color:white;width: 100%;font-size: 18px;border-radius: 40px;">Submit</button> 
+          </div>
+          <div class="col-md-4">
+            <button name="submit_done" value="skip" class="btn btn-light" style="width: 100%;font-size: 18px;border-radius: 40px;">Skip</button> 
+          </div>
+        </div>
+
+        <!-- Hidden information -->
+        <input type="hidden" name="image_name" value="{{ image_name }}">
+        <input type="hidden" name="image_path" value="{{ image_basepath }}">
+        <input type="hidden" id="dmgtypes" value="{{ damage_type_options |safe }}">
+        <input type="hidden" id="active_color_r" value="255">
+        <input type="hidden" id="active_color_g" value="255">
+        <input type="hidden" id="active_color_b" value="0">
+    </div>
+    </form>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $( "#todform" ).submit(function( event ) {
+      var canvas = document.getElementById("tools_sketch");
+      var ctx = canvas.getContext('2d');
+
+      // save current canvas drawing to prev_active site
+      var prev_active_button = $("button.active[id^=annotation_trigger_]");
+
+      if ( prev_active_button.length > 0 ) {
+        var prev_active_id = prev_active_button.attr("value");
+
+        // remove transparency
+        var prev_ctx = ctx.globalCompositeOperation;
+
+        ctx.globalCompositeOperation = "source-over";
+        image_wo_alpha = change_alpha(ctx.getImageData(0, 0, canvas.width, canvas.height), 255);
+        ctx.putImageData(image_wo_alpha, 0, 0);
+
+        ctx.globalCompositeOperation = prev_ctx;
+
+        // save data to input
+        $('input[name="annotation_site_' + String(prev_active_id) + '"]').val(canvas.toDataURL('png'));
+
+        // save data to image (for easy show case)
+        var img_ = document.getElementById("annotation_site_" + String(prev_active_id) + "_img");
+        img_.src = canvas.toDataURL('png');
+      }
+
+      // save all image source into input
+      var total_count = Number(document.getElementById("addannotation").value) + 1;
+
+      for (i=0; i < total_count; i++) {
+        if ( document.getElementById("annotation_site_" + String(i)) ) {
+          document.getElementById("annotation_site_" + String(i)).value = document.getElementById("annotation_site_" + String(i) + "_img").src
+        }
+      }
+
+      return true;
+  });
+
+  // function to change alpha
+  function change_alpha(image, alpha_value_int) {
+      // buffer number of alpha
+      const alpha_buffer = 20;
+
+      // get the image data values 
+      var imageData = image.data;
+
+      // set every fourth value to preset value
+      for (var i=3; i < imageData.length; i+=4) {  
+          if ( (imageData[i-3] > 0 || imageData[i-2] > 0 || imageData[i-1] > 0) && ( imageData[i] > alpha_buffer) ) {
+              imageData[i] = alpha_value_int;
+          } else if  ( (imageData[i-3] > 0 || imageData[i-2] > 0 || imageData[i-1] > 0) && ( imageData[i] < alpha_buffer) ) {
+              imageData[i-3] = 0;
+              imageData[i-2] = 0;
+              imageData[i-1] = 0
+              imageData[i] = 0;
+          }
+      }
+      // after the manipulation, reset the data
+      image.data = imageData;
+
+      return image
+  }
+
+
+
+  function activate_button() {
+      // document.getElementById('submit_button').disabled = false;
+      document.getElementById('undo_btn').disabled = false;
+  };
+
+  function buttonchecked(element) {
+      var label_id = element.id + '_label';
+      var old_class_name = document.getElementById(label_id).className;
+      document.getElementById(label_id).className = old_class_name.replace("outline-", "");
+  };
+
+  // annotation trigger button event
+  function trigger_annotation(element) {
+      var current_id = element.value;
+      var canvas = document.getElementById("tools_sketch");
+      var ctx = canvas.getContext('2d');
+      var prev_ctx = ctx.globalCompositeOperation;
+
+      // save current canvas drawing to prev_active site
+      var prev_active_button = $("button.active[id^=annotation_trigger_]");
+      if ( prev_active_button.length > 0 ) {
+        var prev_active_id = prev_active_button.attr("value");
+
+        if ( prev_active_id == current_id ) {
+          return
+        }
+
+        // remove transparency
+        var prev_ctx = ctx.globalCompositeOperation;
+
+        ctx.globalCompositeOperation = "source-over";
+        image_wo_alpha = change_alpha(ctx.getImageData(0, 0, canvas.width, canvas.height), 255);
+        ctx.putImageData(image_wo_alpha, 0, 0);
+
+        ctx.globalCompositeOperation = prev_ctx;
+
+        // save data to input
+        $('input[name="annotation_site_' + String(prev_active_id) + '"]').val(canvas.toDataURL('png'));
+
+        // save data to image (for easy show case)
+        var img_ = document.getElementById("annotation_site_" + String(prev_active_id) + "_img");
+        img_.src = canvas.toDataURL('png');
+      }
+
+      // deactivate/disable all other related buttons
+      $("[id^=annotation_trigger]").removeClass("active");
+      $("[id^=delete_site_]").attr("disabled", "true");
+
+      // show saved mask
+      ctx.globalCompositeOperation = "copy";
+      ctx.drawImage(
+        document.getElementById("annotation_site_" + String(current_id) + "_img"), 
+        0, 0, canvas.width, canvas.height
+      );
+
+      // get the pixel data
+      var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      var data = imageData.data;
+       
+      // we manipulate the pixel data here in order to make the image lighter
+      for (var i = 0; i < data.length; i += 4) { // we are jumping every 4 values of RGBA for every pixel
+        if ( data[i] != 0 || data[i+1] != 0 || data[i+2] != 0) {
+              data[i] = Number($("#active_color_r").attr("value"));
+              data[i+1] = Number($("#active_color_g").attr("value"));
+              data[i+2] = Number($("#active_color_b").attr("value"));
+        }
+      }
+      
+      imageData.data = data;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.putImageData(imageData, 0, 0);
+
+      ctx.globalCompositeOperation = prev_ctx;
+
+      // remove active mask toggles
+      $("[id^=togglemask_]").removeClass("active");
+
+      // activate/enable related buttons to current selection
+      document.getElementById("annotation_trigger_" + String(current_id)).classList.add("active");
+      document.getElementById("delete_site_" + String(current_id)).disabled = false;
+
+  }
+
+  function deletelabel(element) {
+      var current_id = element.value;
+      var canvas = document.getElementById("tools_sketch");
+      var ctx = canvas.getContext('2d');
+      var prev_ctx = ctx.globalCompositeOperation;
+
+      // clear canvas
+      ctx.globalCompositeOperation = "source-over";
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = prev_ctx;
+
+      // remove active mask toggles
+      $("[id^=togglemask_]").removeClass("active");
+
+      element.parentNode.remove();
+  }
+</script>
+
+</body>
+</html>

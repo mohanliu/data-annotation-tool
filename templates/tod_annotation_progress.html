@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOD Annotation Stats</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type = "text/javascript">
+      google.charts.load('current', {packages: ['corechart', 'bar']});
+      google.charts.setOnLoadCallback(drawBasic);
+
+      function drawBasic() {
+
+            var data = google.visualization.arrayToDataTable([
+              ['Name', 'Annotations',],
+              {% for d in annotation_stats %}
+              ['{{ d.name }}', Number({{ d.num }})],
+              {% endfor %}
+            ]);
+
+            var options = {
+              title: 'Total Annotation Stats',
+              chartArea: {top: 50, width: '50%', height:'60%'},
+              bar: {groupWidth: '60%'},
+              hAxis: {
+                title: 'Total annotations',
+                minValue: 0
+              },
+              vAxis: {
+                title: 'Annotators'
+              }
+            };
+
+            var chart = new google.visualization.BarChart(document.getElementById('chart_div'));
+
+            chart.draw(data, options);
+          }
+    </script>
+
+    <style>
+    body {
+      /* Set "my-sec-counter" to 0 */
+      counter-reset: annotate-site-counter;
+    }
+
+    label.counter::before {
+      /* Increment "my-sec-counter" by 1 */
+      counter-increment: annotate-site-counter;
+      content: "Site " counter(annotate-site-counter);
+    }
+</style>
+</head>
+<body>
+
+<div id="chart_div" style="width: 100%; height: 100vh;"></div>
+
+</body>
+</html>

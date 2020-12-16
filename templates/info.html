@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+* {
+    box-sizing: border-box;
+    /*background:#fff;*/
+}
+
+body {
+    margin: 10;
+    background:#fff;
+}
+
+.column {
+    float: left;
+    width: 50%;
+    background:#fff;
+}
+
+.row:after {
+    content: "";
+    color: #fff;
+    display: table;
+    clear: both;
+}
+</style>
+
+<h2>{{ messages }}</h2>
+
+{% endblock %}
+

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>R&D Size & Location Survey</title>
+    <script type="JavaScript">
+    function preventBack(){window.history.forward();}
+    setTimeout("preventBack()", 0);
+    window.onunload=function(){null};
+    </script>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="{{ url_for('static', filename='reportplot.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='zoomfeature.css') }}" rel="stylesheet">
+<script>
+$(document).ready(function() {
+  $("[id^=rawimg]").css("display", "none");
+  $("[id^=pred]").css("display", "none");
+  $("[id^=toggledmg]").removeClass("active");
+
+  for ( i=0; i < {{ image_number }}; i++) {
+    img = document.getElementById("rawimg" + String(i) + '_0');
+    img.style.display = "inline-block";
+
+    pred = document.getElementById("pred" + String(i) + '_0');
+    pred.style.display = "inline-block";
+
+    togglebutton = document.getElementById("toggledmg" + String(i) + '_0');
+    togglebutton.classList.add("active");
+  };
+
+  for ( x of {{ saved_data.selected_buttons |safe }} ) {
+    document.getElementById(x).checked = true;
+  }
+
+  {% for pm in saved_data.previous_comments %}
+  document.getElementById("{{ pm.id | safe }}").value = String("{{ pm.comments |safe }}");
+  {% endfor %}
+}
+);
+</script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#" style="text-transform:capitalize;">Hi {{ current_user.id }}</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarText">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('size_location_survey.main') }}">Survey</a>
+      </li>
+    </ul>
+    <span class="navbar-text">
+      <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="color:white">Log Out</a>
+    </span>
+  </div>
+</nav>
+<div class="container" style="margin-bottom: 50px">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="progress" style="margin-top:1em">
+              <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ progress }}%;" aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <b>Claim ID</b>: {{ claim_name }}
+        </div>
+        <div class="col-md-6">
+            <b>Progress</b>: {{ index + 1}}  / {{ total_claims_present }}
+        </div>
+    </div>
+
+    <form action="{{ url_for('size_location_survey.process') }}" method="post">
+    <div class="row justify-content-center" style="margin-bottom: 10px">
+      <div class="col-md-4" style="margin-top: 40px">
+        <h3 class="font-weight-bold">Part I. Damage Size</h3>
+      </div>
+    </div>
+    <hr class="col-md-12" style="margin-bottom: 5px" />
+    {% for predictions in claim_predictions %}
+    <div class="row">
+        <div class="col-md-12">
+            <b>Image ID</b>: {{ predictions.image_name }}
+        </div>
+        <div class="col-md-12">
+            <b>Image Tag</b>: {{ predictions.image_tag }}
+        </div>
+        <div class="col-md-5" style="width: 100%;">
+            {% for pred in predictions.damage_list %}
+            <img src="data:image/png;base64,{{ pred.image_bytes }}" id="rawimg{{ predictions.image_id }}_{{ pred.id }}" class="img-fluid zoomimage" alt="{{ predictions.image_name }}" onclick="zoomfunction({{ predictions.image_id }}, {{ pred.id }})" style="display:none">
+            <div id="myModal{{ predictions.image_id }}_{{ pred.id }}" class="modal">
+              <span class="close" onclick="closefunction({{ predictions.image_id }}, {{ pred.id }})">&times;</span>
+              <img class="modal-content" id="modalimg{{ predictions.image_id }}_{{ pred.id }}" style="margin-bottom: 30px">
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="col-md-7">
+          <div>
+            <h5>Damages present in the image:</h5>
+          </div>
+          <div style="margin-left: 20px">
+            {% for pred in predictions.damage_list %}
+            <a role="button" name="showimage" id="toggledmg{{ predictions.image_id }}_{{ pred.id}}" class="btn btn-light" onclick="showimage({{ predictions.image_id }}, {{ pred.id }})">site_{{ pred.id }}</a>
+            {% endfor %}
+          </div>
+          <div style="margin-top: 10px">
+            <h5>Predicted dimension of current damage:</h5>
+          </div>
+            {% for pred in predictions.damage_list %}
+            <div id="pred{{ predictions.image_id }}_{{ pred.id }}" style="display: none;margin-left: 20px">
+            <div class="badge badge-primary text-wrap" style="width: 6rem;font-size:15pt">
+              {{ pred.x_dim }} cm
+            </div> x 
+            <div class="badge badge-primary text-wrap" style="width: 6rem;font-size:15pt">
+              {{ pred.y_dim }} cm
+            </div>
+            </div>
+            {% endfor %}
+            <hr class="col-md-12"/>
+            <table class="table">
+              <thead class="thead-light">
+                  <tr>
+                      <th>Damage #</th>
+                      <th>Strongly Agree</th>
+                      <th>Agree</th>
+                      <th>Slightly Agree</th>
+                      <th>Slightly Disagree</th>
+                      <th>Disagree</th>
+                      <th>Strongly Disagree</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  {% for pred in predictions.damage_list %}
+                  <tr>
+                      <td>site_{{ pred.id }}</td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-strong_agree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id }}_{{ pred.id }}_strong_agree" required/></td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-agree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id }}_{{ pred.id }}_agree" required/></td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-slight_agree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id}}_{{ pred.id }}_slight_agree" required/></td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-slight_disagree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id }}_{{ pred.id }}_slight_disagree" required/></td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-disagree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id }}_{{ pred.id }}_disagree" required/></td>
+                      <td><input type="radio" value="{{ predictions.image_name }}-image{{predictions.image_id}}-damage{{ pred.id }}-strong_disagree" name="dmgsizeeval-image{{predictions.image_id}}-damage{{ pred.id }}" id="dmgsizeeval{{ predictions.image_id }}_{{ pred.id }}_strong_disagree" required/></td>
+                  </tr>
+                  {% endfor %}
+              </tbody>
+          </table>
+          <div>
+            <b>Comments:</b>
+          </div>
+          <textarea rows="2" name="dmgsize_comment{{ predictions.image_id }}" id="dmgsize_comment{{ predictions.image_id }}" placeholder="Comment here..." style="margin-left: 10px;width: 100%"></textarea>
+        </div>
+    </div>
+    <hr class="col-md-12" style="margin-bottom: 5px" />
+    {% endfor %}
+
+    <!-- The following is damage location survey -->
+    <div class="row justify-content-center" style="margin-top: 50px">
+      <div class="col-md-4">
+        <h3 class="font-weight-bold">Part II. Damage Location</h3>
+      </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6" style="width: 100%;">
+            <img src="data:image/png;base64,{{ butterfly_bytes }}" id="butterfly" class="img-fluid">
+        </div>
+        <div class="col-md-6" style="width: 100%;">
+            <div class="row" id="damage_loc_image_pool">
+              {% for predictions in claim_damage_images %}
+              {% if predictions.damage_flag == true %}
+                <div class="col-md-6" style="width: 100%;margin-bottom: 10px">
+                  <img src="data:image/png;base64,{{ predictions.raw_image_bytes }}" id="damageimage{{ predictions.image_id }}" class="img-fluid zoomimage" onclick="inlinezoom({{ predictions.image_id }})">
+                </div>
+              {% endif %}
+              {% endfor %}
+            </div>
+            <div class="row">
+              <div class="col-md-6">
+                  <a role="button" name="showdamage" id="showdamageswitch" class="btn btn-primary" onclick="showdamage(this)" style="color:white;width: 100%;border-radius: 15px;padding: 6px 0px;">Show Damage</a>
+              </div>
+              <div class="col-md-6">
+                  <a role="button" name="showallimage" id="showallimageswitch" class="btn btn-info" onclick="showallimage(this)" style="color:white;width: 100%;border-radius: 15px;padding: 6px 0px;">Display All Images</a>
+              </div>
+            </div>
+        </div>
+    </div>
+    <div class="row justify-content-center" style="margin-top: 20px">
+        <div class="col-md-9" style="width: 100%;">
+            <div style="font-weight:600;font-size:15pt">
+                How much do you agree with the damage location prediction?
+            </div>
+            <div class="wrap">
+                <ul class='likert-six'>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="strong_agree" id="dmgloc_eval_strong_agree" required>
+                    <label>Strongly<br>Agree</label>
+                  </li>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="agree" id="dmgloc_eval_agree" required>
+                    <label>Agree</label>
+                  </li>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="slight_agree" id="dmgloc_eval_slight_agree" required>
+                    <label>Slightly<br>Agree</label>
+                  </li>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="slight_disagree" id="dmgloc_eval_slight_disagree" required>
+                    <label>Slightly<br>Disagree</label>
+                  </li>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="disagree" id="dmgloc_eval_disagree" required>
+                    <label>Disagree</label>
+                  </li>
+                  <li>
+                    <input type="radio" name="dmgloc_eval" value="strong_disagree" id="dmgloc_eval_strong_disagree" required>
+                    <label>Strongly<br>Disagree</label>
+                  </li>
+                </ul>
+            </div>
+            <div style="font-weight:600;font-size:15pt;margin-bottom: 5px">
+                Where part of the butterfly plot missed the damage?
+            </div>
+            <div id="mislabelcontainer">
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <label class="input-group-text">Panel</label>
+                </div>
+                <select class="custom-select" name="mislabelpanel">
+                  <option value="">Choose...</option>
+                  {% for p in panel_list %}
+                    <option value="{{ p }}">{{ p }}</option>
+                  {% endfor %}
+                </select>
+                <div class="input-group-prepend" style="margin-left: 50px">
+                  <label class="input-group-text">Location</label>
+                </div>
+                <select class="custom-select" name="mislabelloc">
+                  <option value="">Choose...</option>
+                  {% for loc in loc_list %}
+                    <option value="{{ loc }}">{{ loc }}</option>
+                  {% endfor %}
+                </select>
+                <a role="button" class="btn btn-success" onclick="addmislabel()" style="margin-left: 30px;">Add</a>
+                <a role="button" class="btn btn-danger disabled" style="margin-left: 5px;">Delete</a>
+              </div>
+            </div>
+            <div style="font-weight:600;font-size:15pt;margin-bottom: 5px">
+                Where part of the butterfly plot falsely labeled the damage?
+            </div>
+            <div id="falslabelcontainer">
+              <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                  <label class="input-group-text">Panel</label>
+                </div>
+                <select class="custom-select" name="falslabelpanel">
+                  <option value="">Choose...</option>
+                  {% for p in panel_list %}
+                    <option value="{{ p }}">{{ p }}</option>
+                  {% endfor %}
+                </select>
+                <div class="input-group-prepend" style="margin-left: 50px">
+                  <label class="input-group-text">Location</label>
+                </div>
+                <select class="custom-select" name="falslabelloc">
+                  <option value="">Choose...</option>
+                  {% for loc in loc_list %}
+                    <option value="{{ loc }}">{{ loc }}</option>
+                  {% endfor %}
+                </select>
+                <a role="button" class="btn btn-success" onclick="addfalslabel()" style="margin-left: 30px;">Add</a>
+                <a role="button" class="btn btn-danger disabled" style="margin-left: 5px;">Delete</a>
+              </div>
+            </div>
+            <div style="font-weight: 600; font-size: 15pt;">
+                Comments:
+            </div>
+            <textarea rows="2" name="dmgloc_comment" id="dmgloc_comment" placeholder="Comment here..." style="margin-left: 20px;width: 100%"></textarea>
+      </div>
+    </div>
+    <div class="row justify-content-center" style="margin-top: 20px">
+        <div class="col-md-4" style="width: 100%;">
+            <div style="margin-top: 1em">
+                <button type="submit" name="submit" value="next" class="btn btn-lg btn-success">Submit</button>
+                {% if index != 0 %}
+                    <button type="submit" name="submit" value="back" class="btn btn-lg btn-secondary " style="margin-left: 20px" onclick="return show_alert()" formnovalidate>Back</button>
+                {% endif %} 
+                <button type="submit" name="submit" value="skip" class="btn btn-lg btn-warning" style="margin-left: 20px" onclick="return show_alert()" formnovalidate>Skip</button>
+            </div>
+          </div>
+    </div>
+    </form>
+</div>
+<script>
+function zoomfunction(image_id, damage_id) {
+  modal = document.getElementById("myModal" + String(image_id) + '_' + String(damage_id));
+  img = document.getElementById("rawimg" + String(image_id) + '_' + String(damage_id));
+  modalImg = document.getElementById("modalimg" + String(image_id) + '_' + String(damage_id));
+  modal.style.display = "block";
+  modalImg.src = img.src;
+}
+
+function inlinezoom(image_id) {
+  img = document.getElementById("damageimage" + String(image_id));
+  if ( img.parentNode.className == "col-md-12" ) {
+    img.parentNode.className = "col-md-6";
+    img.className = "img-fluid zoomimage";
+  } else {
+    img.parentNode.className = "col-md-12";
+    img.className = "img-fluid";
+  } 
+}
+
+function closefunction(image_id, damage_id) {
+  span = document.getElementsByClassName("close")[0];
+  modal = document.getElementById("myModal" + String(image_id) + '_'+ String(damage_id));
+  modal.style.display = "none";
+}
+
+function showimage(image_id, damage_id) {
+  $("[id^=rawimg" + String(image_id) + "_]").css("display", "none");
+  $("[id^=pred"+ String(image_id) + "_]").css("display", "none");
+  $("[id^=toggledmg" + String(image_id) + "_]").removeClass("active");
+
+  var img = document.getElementById("rawimg" + String(image_id) + '_'+ String(damage_id));
+  img.style.display = "inline-block";
+
+  var pred = document.getElementById("pred" + String(image_id) + '_'+ String(damage_id));
+  pred.style.display = "inline-block";
+
+  var togglebutton = document.getElementById("toggledmg" + String(image_id) + '_'+ String(damage_id));
+  togglebutton.classList.add("active")
+}
+
+function addmislabel() {
+  $("#mislabelcontainer").append(`
+<div class="input-group mb-3">
+  <div class="input-group-prepend">
+    <label class="input-group-text">Panel</label>
+  </div>
+  <select class="custom-select" name="mislabelpanel">
+    <option value="">Choose...</option>
+    {% for p in panel_list %}
+      <option value="{{ p }}">{{ p }}</option>
+    {% endfor %}
+  </select>
+  <div class="input-group-prepend" style="margin-left: 50px">
+    <label class="input-group-text">Location</label>
+  </div>
+  <select class="custom-select" name="mislabelloc">
+    <option value="">Choose...</option>
+    {% for loc in loc_list %}
+      <option value="{{ loc }}">{{ loc }}</option>
+    {% endfor %}
+  </select>
+  <a role="button" class="btn btn-success" onclick="addmislabel()" style="margin-left: 30px;">Add</a>
+  <a role="button" class="btn btn-danger" onclick="deletemislabel(this)" style="margin-left: 5px;">Delete</a>
+</div>
+`);
+}
+
+function addfalslabel() {
+  $("#falslabelcontainer").append(`
+<div class="input-group mb-3">
+  <div class="input-group-prepend">
+    <label class="input-group-text">Panel</label>
+  </div>
+  <select class="custom-select" name="falslabelpanel">
+    <option value="">Choose...</option>
+    {% for p in panel_list %}
+      <option value="{{ p }}">{{ p }}</option>
+    {% endfor %}
+  </select>
+  <div class="input-group-prepend" style="margin-left: 50px">
+    <label class="input-group-text">Location</label>
+  </div>
+  <select class="custom-select" name="falslabelloc">
+    <option value="">Choose...</option>
+    {% for loc in loc_list %}
+      <option value="{{ loc }}">{{ loc }}</option>
+    {% endfor %}
+  </select>
+  <a role="button" class="btn btn-success" onclick="addfalslabel()" style="margin-left: 30px;">Add</a>
+  <a role="button" class="btn btn-danger" onclick="deletemislabel(this)" style="margin-left: 5px;">Delete</a>
+</div>
+`);
+}
+
+function deletemislabel(element) {
+  element.parentNode.remove();
+}
+
+function show_alert() {
+  if(!confirm("This will delete all the entries in current page! Are you sure?")) {
+    return false;
+  } else {
+    this.form.submit();
+  }
+}
+
+function showdamage(element) {
+  if (element.innerHTML == "Show Damage") {
+    element.innerHTML = "Hide Damage";
+    {% for predictions in claim_damage_images %}
+      {% if predictions.damage_flag == true %}
+        img = document.getElementById("damageimage{{ predictions.image_id }}")
+        img.src = "data:image/png;base64,{{ predictions.damage_image_bytes }}";
+      {% endif %}
+    {% endfor %}
+  } else {
+    element.innerHTML = "Show Damage";
+    {% for predictions in claim_damage_images %}
+      {% if predictions.damage_flag == true %}
+        img = document.getElementById("damageimage{{ predictions.image_id }}")
+        img.src = "data:image/png;base64,{{ predictions.raw_image_bytes }}";
+      {% endif %}
+    {% endfor %}
+  }
+}
+
+function showallimage(element) {
+  if (element.innerHTML == "Display All Images") {
+    element.innerHTML = "Display Damaged Images";
+    {% for predictions in claim_damage_images %}
+      {% if predictions.damage_flag == false %}
+        $("#damage_loc_image_pool").append(`
+          <div class="col-md-6" style="width: 100%;margin-bottom: 10px">
+            <img src="data:image/png;base64,{{ predictions.raw_image_bytes }}" id="damageimage{{ predictions.image_id }}" class="img-fluid zoomimage" onclick="inlinezoom({{ predictions.image_id }})">
+         </div>
+        `);
+      {% endif %}
+    {% endfor %}
+  } else {
+    element.innerHTML = "Display All Images";
+    {% for predictions in claim_damage_images %}
+      {% if predictions.damage_flag == false %}
+        img = document.getElementById("damageimage{{ predictions.image_id }}");
+        img.parentNode.remove();
+      {% endif %}
+    {% endfor %}
+  }
+}
+
+</script>
+</body>
+</html>

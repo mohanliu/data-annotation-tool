@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOD Annotation</title>
+
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"  crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <script src="{{ url_for('static', filename='tod_annotation_tool.js') }}"></script>
+
+    <script type = "text/javascript">
+      function preventBack(){window.history.forward();}
+      setTimeout("preventBack()", 0);
+      window.onunload=function(){
+        null
+      };
+    </script>
+
+    <style>
+    body {
+      /* Set "my-sec-counter" to 0 */
+      counter-reset: annotate-site-counter;
+    }
+
+    label.counter::before {
+      /* Increment "my-sec-counter" by 1 */
+      counter-increment: annotate-site-counter;
+      content: "Site " counter(annotate-site-counter);
+    }
+</style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+  <a class="navbar-brand" href="#" style="text-transform:capitalize;">Hi {{ current_user.id }}</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarText">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="/">Home</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation.main', page=index) }}" style="pointer-events: none">TOD Annotation</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="{{ url_for('damage_type_annotation_viewresults.main') }}" target="_blank">Results</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" href="http://mliu3.pages.gitlab.aws.cccis.com/damage_type_annotation/" target="_blank">Guidelines</a>
+      </li>
+    </ul>
+    <span class="navbar-text">
+      <a href="{{ url_for('logout') }}" class="btn btn-primary btn-sm" style="color:white">Log Out</a>
+    </span>
+  </div>
+</nav>
+
+<div style="padding: 3rem 1.5rem; text-align: center">
+    <h2> Thank you for completing this batch of annotation.</h2>
+<form action="{{ url_for('damage_type_annotation.nextbatch') }}" method="post">
+    <div class="row">
+        <div class="col-md-2 offset-md-4">
+          <a role="button" href="{{ url_for('damage_type_annotation_viewresults.main') }}" class="btn btn-success" style="colowhite;width: 100%;font-size: 18px;border-radius: 40px;">View Results</a> 
+        </div>
+        <div class="col-md-2">
+          <button type="submit" name="submit" value="next" class="btn btn-primary" style="width: 100%;font-size: 18;border-radius: 40px;">Next Batch</button>
+        </div>
+    </div>
+</form>
+</div>
+</body>
+</html>
+

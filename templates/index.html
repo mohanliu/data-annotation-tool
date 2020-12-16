@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+/** {
+    box-sizing: border-box;
+    background:#fff;
+}*/
+
+/*body {
+    margin: 10;
+    background:#fff;
+}*/
+
+.column {
+    float: left;
+    width: 50%;
+    background:#fff;
+}
+
+.row:after {
+    content: "";
+    color: #fff;
+    display: table;
+    clear: both;
+}
+</style>
+
+<div class="jumbotron">
+  <h1 class="display-4">Welcome to R&D Team's Internal Data Tool</h1>
+  <p class="lead">This is a collection of data tools for internal experiments.</p>
+</div>
+<h2 style="margin: 40px">Annotation Tools </h2>
+<div class="row" style="margin: 40px">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Damage Type Annotation</h5>
+        <p class="card-text">Label visible damage types in image at <i>pixel-level</i>.</p>
+        <a href="{{ url_for('damage_type_annotation.entry') }}" class="btn btn-primary">Enter</a>
+        <a href="{{ url_for('tod_annotation_progress.main') }}" class="btn btn-light" target="_blank">Stats</a>
+      </div>
+    </div>
+  </div>
+</div>
+<h2 style="margin: 40px">Internal surveys </h2>
+<div class="row" style="margin: 40px">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Damage Style Survey</h5>
+        <p class="card-text">Survey the damage type/size/location predictions at <i>claim-level</i>.</p>
+        <a href="{{ url_for('tsl_survey.main') }}" class="btn btn-primary">Enter</a>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Type of Damage Survey</h5>
+        <p class="card-text">Survey the current type of damage model output at <i>image-level</i>.</p>
+        <a href="{{ url_for('tod_survey.main') }}" class="btn btn-primary">Enter</a>
+        <a href="{{ url_for('tod_report.main') }}" class="btn btn-light">View Report</a>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- <div class="row" style="margin: 40px">
+  <div class="col-sm-6">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Damage Size & Location Survey</h5>
+        <p class="card-text">Survey the damage size & location model output at <i>claim-level</i>.</p>
+        <a href="{{ url_for('size_location_survey.main') }}" class="btn btn-primary">Enter</a>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+{% endblock %}
+
